@@ -6,8 +6,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
-  Line,
   ReferenceDot,
   Area,
   AreaChart,
