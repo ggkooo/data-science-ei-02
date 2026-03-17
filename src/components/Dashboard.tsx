@@ -62,7 +62,7 @@ function formatMode(
   if (modeType === 'amodal') return 'Amodal';
   if (typeof mode === 'number') return `${fmt(mode)} ${unit}`;
   if (Array.isArray(mode)) return mode.map((m) => `${fmt(m)} ${unit}`).join(', ');
-  return '';
+  return 'N/A';
 }
 
 export function Dashboard({ data, filename, onReset }: DashboardProps) {
