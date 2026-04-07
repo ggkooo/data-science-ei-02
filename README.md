@@ -1,99 +1,99 @@
-# Environmental Sensor Statistics Dashboard
+# Dashboard de Estatística para Sensores Ambientais
 
-A clean and responsive React + TypeScript web application for statistical analysis of CSV sensor datasets.
+Aplicação web em React + TypeScript para análise estatística de arquivos CSV com dados de sensores.
 
-The app lets users upload CSV files, choose a metric (Temperature, Humidity, Noise, eCO2, TVOC), and automatically computes descriptive statistics and grouped frequency distributions with visual charts.
+O sistema permite selecionar uma variável (Temperatura, Umidade, Ruído, eCO2 e TVOC), montar distribuição por classes e calcular medidas descritivas com o método de dados agrupados utilizado em sala.
 
 ## Screenshot
 
-![Application Screenshot](README-img/application.png)
+![Screenshot da aplicação](README-img/application.png)
 
-## Features
+## Funcionalidades
 
-- CSV upload (drag-and-drop or file picker)
-- Automatic CSV parsing and field extraction
-- Variable selector for multiple sensor measurements
-- Frequency distribution table with:
-  - class intervals
-  - absolute frequency ($f_i$)
-  - cumulative frequency ($F_i$)
-  - class midpoint ($x_i$)
-  - relative frequency
-- Descriptive statistics:
-  - mean
-  - median
-  - mode (amodal, unimodal, multimodal)
-  - variance
-  - standard deviation
-  - coefficient of variation
-- Data visualization:
-  - histogram (grouped absolute frequencies)
-  - ogive (grouped cumulative frequencies)
-- Responsive UI for mobile, tablet, and desktop
+- Upload de CSV por clique ou arrastar e soltar
+- Leitura e validação automática dos campos numéricos
+- Seleção de variável para análise
+- Construção de tabela por classes com:
+  - intervalos de classe
+  - ponto médio ($x_i$)
+  - frequência absoluta ($f_i$)
+  - frequência acumulada ($F_i$)
+  - coluna $f_i x_i$
+  - coluna $f_i x_i^2$
+- Cálculo de medidas para dados agrupados:
+  - média
+  - mediana
+  - moda
+  - variância populacional
+  - desvio padrão populacional
+  - coeficiente de variação
+- Gráficos:
+  - histograma
+  - ogiva
+- Interface responsiva (desktop e mobile)
+- Interface traduzida para português (pt-BR)
 
-## Tech Stack
+## Método Estatístico Implementado
+
+As fórmulas foram alinhadas ao método de tabela de classes da disciplina:
+
+- Amplitude total: $AT = x_{max} - x_{min}$
+- Amplitude de classe: $h = \frac{AT}{\sqrt{n}}$ (com arredondamento)
+- Número de classes: $k = \left\lceil \frac{AT}{h} \right\rceil$
+- Média: $\bar{x} = \frac{\sum f_i x_i}{n}$
+- Mediana (agrupada): $Md = L_i + \left(\frac{\frac{n}{2} - F_{ant}}{f_i}\right) h$
+- Moda (agrupada): $Mo = L_i + \left(\frac{d_1}{d_1 + d_2}\right) h$
+- Variância populacional: $\sigma^2 = \frac{\sum f_i x_i^2}{n} - \bar{x}^2$
+- Desvio padrão: $\sigma = \sqrt{\sigma^2}$
+- Coeficiente de variação: $CV = \frac{\sigma}{\bar{x}} \cdot 100$
+
+## Alterações Recentes
+
+- Ajuste dos cálculos para dados agrupados por classes
+- Troca do método anterior por variância e desvio padrão populacionais
+- Inclusão das colunas $f_i x_i$ e $f_i x_i^2$ na tabela
+- Remoção de frequência relativa, frequência relativa acumulada e barra de distribuição da tabela
+- Tradução dos textos da interface para português
+- Alteração do favicon para o emoji de calculadora (🖩)
+
+## Tecnologias
 
 - React 19
 - TypeScript
 - Vite 8
-- Tailwind CSS 4 (PostCSS integration)
-- Papa Parse (CSV parser)
-- Recharts (data visualization)
+- Tailwind CSS 4
+- Papa Parse
+- Recharts
 
-## Project Structure
+## Como Executar
 
-```text
-.
-|-- README-img/
-|   `-- application.png
-|-- src/
-|   |-- components/
-|   |   |-- Charts.tsx
-|   |   |-- Dashboard.tsx
-|   |   |-- FileUpload.tsx
-|   |   |-- FrequencyTable.tsx
-|   |   `-- icons/
-|   |       `-- UploadCloud.tsx
-|   |-- utils/
-|   |   |-- csvParser.ts
-|   |   `-- statistics.ts
-|   |-- App.tsx
-|   |-- index.css
-|   `-- main.tsx
-|-- postcss.config.js
-|-- package.json
-`-- vite.config.ts
-```
-
-## Getting Started
-
-### 1. Install dependencies
+1. Instale as dependências
 
 ```bash
 npm install
 ```
 
-### 2. Start development server
+2. Rode em desenvolvimento
 
 ```bash
 npm run dev
 ```
 
-### 3. Build for production
+3. Gere o build de produção
 
 ```bash
 npm run build
 ```
 
-### 4. Preview production build
+4. Visualize o build
 
 ```bash
 npm run preview
 ```
 
-## CSV Format
+## Formato Esperado do CSV
 
-The app expects CSV columns such as:
+Colunas suportadas:
 
 - `payload.temperature`
 - `payload.humidity`
@@ -104,10 +104,8 @@ The app expects CSV columns such as:
 - `payload.sector`
 - `payload.device`
 
-Rows missing numeric values for the supported metrics are ignored.
+Linhas com valores numéricos inválidos para as variáveis analisadas são descartadas.
 
-## Author Signature in UI
+## Autor
 
-The interface includes a visible signature:
-
-- `Giordano Bruno Biasi Berwig`
+- Giordano Bruno Biasi Berwig
