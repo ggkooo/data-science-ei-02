@@ -24,18 +24,18 @@ export interface Statistics {
   variance: number;
   stdDev: number;
   cv: number;
+  sumFiXi: number;
+  sumFiXi2: number;
   min: number;
   max: number;
   n: number;
 }
 
-function sturgesRule(n: number): number {
-  // Regra de Sturges: k = 1 + 3.322 * log10(n)
-  // Define o número ótimo de classes para dividir os dados
-  return Math.ceil(1 + 3.322 * Math.log10(n));
-}
-
 export function calculateFrequencyDistribution(data: number[]): FrequencyDistribution {
+  if (data.length === 0) {
+    return { classes: [], totalAmplitude: 0, classWidth: 0, numClasses: 0 };
+  }
+
   // Ordena os dados para encontrar limites
   const sorted = [...data].sort((a, b) => a - b);
   const min = sorted[0];
@@ -44,12 +44,9 @@ export function calculateFrequencyDistribution(data: number[]): FrequencyDistrib
   // Amplitude Total (AT) = Valor máximo - Valor mínimo
   const totalAmplitude = max - min;
 
-  // Calcula número de classes (k) usando regra de Sturges
-  // Limita entre 6 e 10 classes para melhor visualização
-  const k = Math.min(Math.max(sturgesRule(data.length), 6), 10);
-  
-  // Amplitude de classe (h) = AT / k
-  const classWidth = Math.ceil(totalAmplitude / k);
+  // Método da disciplina: h = AT / sqrt(n), arredondado para inteiro
+  const classWidth = Math.max(Math.round(totalAmplitude / Math.sqrt(data.length)), 1);
+  const k = Math.max(Math.ceil(totalAmplitude / classWidth), 1);
 
   let cumFreq = 0;
   let cumRelFreq = 0;
@@ -84,64 +81,95 @@ export function calculateFrequencyDistribution(data: number[]): FrequencyDistrib
   return { classes, totalAmplitude, classWidth, numClasses: k };
 }
 
-export function calculateStatistics(data: number[]): Statistics {
+export function calculateStatistics(
+  data: number[],
+  distribution?: FrequencyDistribution
+): Statistics {
   const n = data.length;
+  if (n === 0) {
+    return {
+      mean: 0,
+      median: 0,
+      mode: null,
+      modeType: 'amodal',
+      variance: 0,
+      stdDev: 0,
+      cv: 0,
+      sumFiXi: 0,
+      sumFiXi2: 0,
+      min: 0,
+      max: 0,
+      n: 0,
+    };
+  }
+
   const sorted = [...data].sort((a, b) => a - b);
   const min = sorted[0];
   const max = sorted[n - 1];
 
-  // Média Aritmética (x̄) = Σ(xi) / n
-  const mean = data.reduce((a, b) => a + b, 0) / n;
+  const freqDistribution = distribution ?? calculateFrequencyDistribution(data);
+  const classes = freqDistribution.classes;
+  const h = freqDistribution.classWidth;
 
-  // Mediana: valor central que divide os dados em 50/50
-  // Para n par: média entre o (n/2)º e (n/2 + 1)º termos do rol ordenado
-  // Para n ímpar: é o valor do meio
+  // Média para dados agrupados: x̄ = Σ(fi * xi) / n
+  const sumFiXi = classes.reduce((acc, cls) => acc + cls.fi * cls.midpoint, 0);
+  const sumFiXi2 = classes.reduce((acc, cls) => acc + cls.fi * cls.midpoint ** 2, 0);
+  const mean = sumFiXi / n;
+
+  // Mediana para dados agrupados: Md = Li + [((n/2) - Fant) / fi] * h
+  const half = n / 2;
+  const medianClassIndex = classes.findIndex((cls) => cls.Fi >= half);
+  const medianIdx = medianClassIndex === -1 ? classes.length - 1 : medianClassIndex;
+  const medianClass = classes[medianIdx];
+  const cumulativeBeforeMedian = medianIdx > 0 ? classes[medianIdx - 1].Fi : 0;
   const median =
-    n % 2 === 0
-      ? (sorted[n / 2 - 1] + sorted[n / 2]) / 2
-      : sorted[Math.floor(n / 2)];
+    medianClass && medianClass.fi > 0
+      ? medianClass.lowerBound + ((half - cumulativeBeforeMedian) / medianClass.fi) * h
+      : mean;
 
-  // Moda: valor(es) que mais se repete(m) no conjunto
-  // Pode ser amodal (nenhum valor se repete),
-  // unimodal (um valor é moda) ou multimodal (vários valores com mesma frequência)
-  const freqMap: Record<string, number> = {};
-  for (const v of data) {
-    const key = String(v);
-    freqMap[key] = (freqMap[key] ?? 0) + 1;
+  // Moda para dados agrupados: Mo = Li + [d1 / (d1 + d2)] * h
+  const maxFreq = Math.max(...classes.map((cls) => cls.fi));
+  const modalClassIndexes = classes
+    .map((cls, idx) => ({ fi: cls.fi, idx }))
+    .filter((item) => item.fi === maxFreq)
+    .map((item) => item.idx);
+
+  let mode: number | number[] | null = null;
+  let modeType: Statistics['modeType'] = 'amodal';
+
+  if (maxFreq > 0 && modalClassIndexes.length < classes.length) {
+    const modalValues = modalClassIndexes.map((idx) => {
+      const current = classes[idx];
+      const prevFi = idx > 0 ? classes[idx - 1].fi : 0;
+      const nextFi = idx < classes.length - 1 ? classes[idx + 1].fi : 0;
+      const d1 = current.fi - prevFi;
+      const d2 = current.fi - nextFi;
+      const denominator = d1 + d2;
+
+      if (denominator <= 0) {
+        return current.midpoint;
+      }
+
+      return current.lowerBound + (d1 / denominator) * h;
+    });
+
+    if (modalValues.length === 1) {
+      mode = modalValues[0];
+      modeType = 'unimodal';
+    } else {
+      mode = modalValues.sort((a, b) => a - b);
+      modeType = 'multimodal';
+    }
   }
-  const maxFreq = Math.max(...Object.values(freqMap));
-  const modeValues = Object.entries(freqMap)
-    .filter(([, f]) => f === maxFreq)
-    .map(([v]) => Number(v))
-    .sort((a, b) => a - b);
 
-  let mode: number | number[] | null;
-  let modeType: Statistics['modeType'];
+  // Variância populacional para dados agrupados: σ² = Σ(fi * (xi - x̄)²) / n
+  const variance = Math.max(sumFiXi2 / n - mean ** 2, 0);
 
-  if (maxFreq === 1) {
-    mode = null;
-    modeType = 'amodal';
-  } else if (modeValues.length === 1) {
-    mode = modeValues[0];
-    modeType = 'unimodal';
-  } else {
-    mode = modeValues;
-    modeType = 'multimodal';
-  }
-
-  // Variância amostral (s²) = Σ(xi - x̄)² / (n - 1)
-  // Usa n-1 (Bessel's correction) para amostras
-  // Indica quanto os dados variam em relação à média
-  const variance = data.reduce((sum, v) => sum + (v - mean) ** 2, 0) / (n - 1);
-  
-  // Desvio Padrão (s) = √(s²)
-  // Raiz quadrada da variância, na mesma unidade dos dados
+  // Desvio padrão populacional: σ = √σ²
   const stdDev = Math.sqrt(variance);
-  
-  // Coeficiente de Variação (CV) = (s / x̄) * 100
-  // Mede a variabilidade relativa em percentual
-  // Útil para comparar variabilidade de variáveis com diferentes unidades/escalas
-  const cv = (stdDev / mean) * 100;
 
-  return { mean, median, mode, modeType, variance, stdDev, cv, min, max, n };
+  // Coeficiente de variação: CV = (σ / x̄) * 100
+  const cv = mean === 0 ? 0 : (stdDev / mean) * 100;
+
+  return { mean, median, mode, modeType, variance, stdDev, cv, sumFiXi, sumFiXi2, min, max, n };
 }
