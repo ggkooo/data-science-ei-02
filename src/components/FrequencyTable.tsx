@@ -13,6 +13,9 @@ function fmt(n: number, decimals = 2) {
 }
 
 export function FrequencyTable({ classes, n }: FrequencyTableProps) {
+  const sumXiFi = classes.reduce((acc, cls) => acc + cls.midpoint * cls.fi, 0);
+  const sumFiXi2 = classes.reduce((acc, cls) => acc + cls.fi * cls.midpoint ** 2, 0);
+
   return (
     <div className="overflow-x-auto rounded-xl border border-zinc-200">
       <table className="w-full text-sm text-left">
@@ -29,13 +32,10 @@ export function FrequencyTable({ classes, n }: FrequencyTableProps) {
               Freq. Acumulada (F<sub>i</sub>)
             </th>
             <th className="px-4 py-3 font-semibold text-zinc-700 text-center whitespace-nowrap">
-              Freq. Relativa (%)
+              x<sub>i</sub>f<sub>i</sub>
             </th>
             <th className="px-4 py-3 font-semibold text-zinc-700 text-center whitespace-nowrap">
-              Fr. Rel. Acum. (%)
-            </th>
-            <th className="px-4 py-3 font-semibold text-zinc-700 text-center whitespace-nowrap w-36">
-              Distribuição
+              f<sub>i</sub>x<sub>i</sub><sup>2</sup>
             </th>
           </tr>
         </thead>
@@ -61,20 +61,11 @@ export function FrequencyTable({ classes, n }: FrequencyTableProps) {
                 </span>
               </td>
               <td className="px-4 py-3 text-center text-zinc-600">{cls.Fi}</td>
-              <td className="px-4 py-3 text-center text-zinc-600">{fmt(cls.frel)}%</td>
-              <td className="px-4 py-3 text-center text-zinc-600">{fmt(cls.frelAcum)}%</td>
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-1.5">
-                  <div className="flex-1 bg-zinc-200 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-full bg-blue-500 rounded-full transition-all duration-500"
-                      style={{ width: `${(cls.fi / n) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-xs text-zinc-400 w-8 text-right">
-                    {fmt(cls.frel, 1)}%
-                  </span>
-                </div>
+              <td className="px-4 py-3 text-center text-zinc-600 font-mono text-xs">
+                {fmt(cls.midpoint * cls.fi)}
+              </td>
+              <td className="px-4 py-3 text-center text-zinc-600 font-mono text-xs">
+                {fmt(cls.fi * cls.midpoint ** 2)}
               </td>
             </tr>
           ))}
@@ -85,9 +76,8 @@ export function FrequencyTable({ classes, n }: FrequencyTableProps) {
             <td className="px-4 py-3" />
             <td className="px-4 py-3 text-center font-semibold text-zinc-700">{n}</td>
             <td className="px-4 py-3 text-center font-semibold text-zinc-700">{n}</td>
-            <td className="px-4 py-3 text-center font-semibold text-zinc-700">100,00%</td>
-            <td className="px-4 py-3 text-center font-semibold text-zinc-700">100,00%</td>
-            <td className="px-4 py-3" />
+            <td className="px-4 py-3 text-center font-semibold text-zinc-700">{fmt(sumXiFi)}</td>
+            <td className="px-4 py-3 text-center font-semibold text-zinc-700">{fmt(sumFiXi2)}</td>
           </tr>
         </tfoot>
       </table>
